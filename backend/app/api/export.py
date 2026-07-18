@@ -1,5 +1,6 @@
 """데이터 내보내기 & 업로드 템플릿 — 엑셀/CSV 다운로드."""
 import io
+from urllib.parse import quote
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -43,12 +44,17 @@ def _records_to_df(entity: str, records) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=list(headers.values()))
 
 
+def _disposition(filename: str, ext: str) -> str:
+    """RFC 5987 — 한글 파일명 인코딩 + ASCII 폴백 (HTTP 헤더는 latin-1만 허용)."""
+    return f"attachment; filename=download.{ext}; filename*=UTF-8''{quote(filename + '.' + ext)}"
+
+
 def _csv_response(df: pd.DataFrame, filename: str) -> Response:
     data = ("﻿" + df.to_csv(index=False)).encode("utf-8")  # BOM → 엑셀 한글 호환
     return Response(
         content=data,
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
+        headers={"Content-Disposition": _disposition(filename, "csv")},
     )
 
 
@@ -59,7 +65,7 @@ def _xlsx_response(df: pd.DataFrame, filename: str) -> Response:
     return Response(
         content=buf.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}.xlsx"'},
+        headers={"Content-Disposition": _disposition(filename, "xlsx")},
     )
 
 
@@ -68,13 +74,9 @@ def download_template(entity: str):
     """업로드용 빈 템플릿(헤더만) CSV 다운로드."""
     if entity not in importer.COLUMN_MAPS:
         raise HTTPException(status_code=404, detail="알 수 없는 데이터 종류입니다.")
-    try:
-        df = pd.DataFrame(columns=list(_headers(entity).values()))
-        label = ENTITY_LABELS.get(entity, entity)
-        return _csv_response(df, f"{label}_업로드양식")
-    except Exception as exc:  # noqa: BLE001
-        import traceback
-        raise HTTPException(status_code=500, detail=traceback.format_exc()[-800:])
+    df = pd.DataFrame(columns=list(_headers(entity).values()))
+    label = ENTITY_LABELS.get(entity, entity)
+    return _csv_response(df, f"{label}_업로드양식")
 
 
 @router.get("/{entity}")
