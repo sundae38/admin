@@ -91,6 +91,13 @@ def _coerce(field: str, value):
         return None
     if pd.isna(value):
         return None
+    if field == "survey_type":
+        t = str(value).strip()
+        if t in ("사업", "사업 만족도", "전체"):
+            return "전체"
+        if t in ("프로그램", "프로그램 만족도"):
+            return "프로그램"
+        return t
     if field == "special_categories":
         # "기초생활수급, 한부모가정" 또는 "기초생활수급/한부모가정" → 리스트
         text = str(value).strip()
