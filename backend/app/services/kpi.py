@@ -88,6 +88,10 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
 
     # 예산 집행 — 용도별
     paid_by_cat = _paid_by_category(project.payments)
+    # 심사관리비/사업관리비: 예산과목 입력(계획금액=예산) 합계 대비 집행액 합계
+    planned_by_cat: dict[str, float] = defaultdict(float)
+    for p in project.payments:
+        planned_by_cat[p.budget_category or "지원금"] += p.planned_amount or 0.0
     total_budget = project.total_budget or 0.0
     grant_budget = project.budget_grant or 0.0
 
@@ -176,15 +180,21 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
         ),
         BudgetLine(
             label="심사관리비",
-            budget=project.budget_review or 0.0,
+            budget=planned_by_cat.get("심사관리비", 0.0) or (project.budget_review or 0.0),
             paid=paid_by_cat.get("심사관리비", 0.0),
-            rate=_rate(paid_by_cat.get("심사관리비", 0.0), project.budget_review or 0.0),
+            rate=_rate(
+                paid_by_cat.get("심사관리비", 0.0),
+                planned_by_cat.get("심사관리비", 0.0) or (project.budget_review or 0.0),
+            ),
         ),
         BudgetLine(
-            label="프로그램운영비",
-            budget=project.budget_program or 0.0,
-            paid=paid_by_cat.get("프로그램운영비", 0.0),
-            rate=_rate(paid_by_cat.get("프로그램운영비", 0.0), project.budget_program or 0.0),
+            label="사업관리비",
+            budget=planned_by_cat.get("사업관리비", 0.0) or (project.budget_program or 0.0),
+            paid=paid_by_cat.get("사업관리비", 0.0),
+            rate=_rate(
+                paid_by_cat.get("사업관리비", 0.0),
+                planned_by_cat.get("사업관리비", 0.0) or (project.budget_program or 0.0),
+            ),
         ),
     ]
 

@@ -4,7 +4,7 @@ import type { Meta, Project } from "../api/types";
 import ProjectManager from "../components/ProjectManager";
 import ParticipantManager from "../components/ParticipantManager";
 import GrantManager from "../components/GrantManager";
-import MonthlyExpenseGrid from "../components/MonthlyExpenseGrid";
+import ExpenseManager from "../components/ExpenseManager";
 import ProgramManager from "../components/ProgramManager";
 import PartnerManager from "../components/PartnerManager";
 import SurveyManager from "../components/SurveyManager";
@@ -18,7 +18,7 @@ type Tab = "projects" | "participants" | "grants" | "expenses" | "programs" | "p
 const TABS: { key: Tab; label: string }[] = [
   { key: "projects", label: "프로젝트 관리" },
   { key: "grants", label: "장학금(지원금) 내역" },
-  { key: "expenses", label: "기타 지급(월별)" },
+  { key: "expenses", label: "기타 지급(심사·사업관리비)" },
   { key: "programs", label: "세부 프로그램 관리" },
   { key: "partners", label: "협력기관 관리" },
   { key: "surveys", label: "만족도 관리" },
@@ -53,7 +53,7 @@ export default function DataManagement() {
       {tab === "projects" && <ProjectManager ctx={ctx} />}
       {tab === "participants" && <ParticipantManager ctx={ctx} />}
       {tab === "grants" && <GrantManager ctx={ctx} />}
-      {tab === "expenses" && <MonthlyExpenseGrid ctx={ctx} />}
+      {tab === "expenses" && <ExpenseManager ctx={ctx} />}
       {tab === "programs" && <ProgramManager ctx={ctx} />}
       {tab === "partners" && <PartnerManager ctx={ctx} />}
       {tab === "surveys" && <SurveyManager ctx={ctx} />}
