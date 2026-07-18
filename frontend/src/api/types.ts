@@ -92,6 +92,7 @@ export interface ProjectKPI {
   grant_remaining: number;
   grant_execution_rate: number;
   grant_initial_headcount: number;
+  grant_support_headcount: number;
   budget_lines: BudgetLine[];
   funding_sources: AmountItem[];
   program_participation_rate: number;
@@ -112,6 +113,7 @@ export interface ProjectKPI {
 export interface OverviewKPI {
   total_projects: number;
   total_selected: number;
+  total_support_headcount: number;
   total_budget: number;
   total_paid: number;
   overall_execution_rate: number;

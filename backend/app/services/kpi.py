@@ -99,6 +99,14 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
     grant_initial_headcount = sum(
         p.initial_headcount for p in grant_payments if p.grant_kind == "최초지급"
     )
+    # 지원인원 = 최초지급 인원 + 추가지급 인원 − 반환 인원
+    grant_additional_hc = sum(
+        p.initial_headcount for p in grant_payments if p.grant_kind == "추가지급"
+    )
+    grant_returned_hc = sum(
+        p.initial_headcount for p in grant_payments if p.grant_kind == "반환"
+    )
+    grant_support_headcount = grant_initial_headcount + grant_additional_hc - grant_returned_hc
 
     # 총 집행액 = 비지원금 지급 + 지원금 실집행
     non_grant_paid = sum(
@@ -186,6 +194,7 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
         grant_remaining=grant_remaining,
         grant_execution_rate=_rate(grant_paid, grant_budget),
         grant_initial_headcount=grant_initial_headcount,
+        grant_support_headcount=grant_support_headcount,
         budget_lines=budget_lines,
         funding_sources=funding_sources,
         program_participation_rate=participation_rate,
@@ -272,6 +281,7 @@ def compute_overview(
     project_kpis = [compute_project_kpi(db, p) for p in projects]
 
     total_selected = sum(k.selected_count for k in project_kpis)
+    total_support_headcount = sum(k.grant_support_headcount for k in project_kpis)
     total_budget = sum(k.total_budget for k in project_kpis)
     total_paid = sum(k.total_paid for k in project_kpis)
     total_partners = sum(k.partner_count for k in project_kpis)
@@ -327,6 +337,7 @@ def compute_overview(
     return OverviewKPI(
         total_projects=len(project_kpis),
         total_selected=total_selected,
+        total_support_headcount=total_support_headcount,
         total_budget=total_budget,
         total_paid=total_paid,
         overall_execution_rate=_rate(total_paid, total_budget),

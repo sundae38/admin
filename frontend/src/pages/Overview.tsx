@@ -94,6 +94,7 @@ export default function Overview() {
       <div className="kpi-grid">
         <KPITile label="총 프로젝트 수" value={num(data.total_projects)} unit="개" />
         <KPITile label="총 선발인원" value={num(data.total_selected)} unit="명" />
+        <KPITile label="지원인원" value={num(data.total_support_headcount)} unit="명" sub="최초+추가−반환" />
         <KPITile label="교육적 배려대상" value={num(data.total_special_care)} unit="명" sub="선발인원 중 통합" />
         <KPITile label="총예산" value={won(data.total_budget)} unit="원" sub={`집행 ${won(data.total_paid)}원`} />
         <KPITile label="평균 만족도" value={data.avg_satisfaction.toFixed(2)} unit="/5" />

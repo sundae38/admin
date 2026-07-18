@@ -131,6 +131,7 @@ export default function ProjectDetail() {
               <KPITile label="반환" value={won(kpi.grant_returned)} unit="원" />
               <KPITile label="실집행액" value={won(kpi.grant_paid)} unit="원" sub={`집행률 ${pct(kpi.grant_execution_rate)}`} />
               <KPITile label="집행잔액" value={won(kpi.grant_remaining)} unit="원" />
+              <KPITile label="지원인원" value={num(kpi.grant_support_headcount)} unit="명" sub="최초+추가−반환" />
             </div>
           </div>
           <div className="chart-grid">

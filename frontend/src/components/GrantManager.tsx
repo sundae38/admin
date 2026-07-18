@@ -40,10 +40,16 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
 
   // 요약 (실집행 = 최초 + 추가 − 반환)
   const sum = (kind: string) => rows.filter((r) => r.grant_kind === kind).reduce((s, r) => s + r.paid_amount, 0);
+  const sumHc = (kind: string) => rows.filter((r) => r.grant_kind === kind).reduce((s, r) => s + (r.initial_headcount || 0), 0);
   const initial = sum("최초지급");
   const additional = sum("추가지급");
   const returned = sum("반환");
   const executed = initial + additional - returned;
+  // 지원인원 = 최초 인원 + 추가 인원 − 반환 인원
+  const supportHc = sumHc("최초지급") + sumHc("추가지급") - sumHc("반환");
+
+  const hcLabel = (kind?: string) =>
+    kind === "추가지급" ? "추가 인원" : kind === "반환" ? "반환 인원" : "최초 선발인원";
 
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -96,19 +102,20 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
         <SumTile label="추가지급" value={additional} />
         <SumTile label="반환" value={returned} />
         <SumTile label="실집행액 (최초+추가−반환)" value={executed} highlight />
+        <SumTile label="지원인원 (최초+추가−반환)" value={supportHc} unit="명" highlight />
       </div>
 
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>구분</th><th className="num">금액</th><th className="num">최초선발인원</th><th>사유</th><th>일자</th><th>상태</th><th>작성/수정 (감사)</th><th></th></tr>
+            <tr><th>구분</th><th className="num">금액</th><th className="num">인원수</th><th>사유</th><th>일자</th><th>상태</th><th>작성/수정 (감사)</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((p) => (
               <tr key={p.id}>
                 <td><span className="badge" style={{ background: p.grant_kind === "반환" ? "#fbe4e4" : "#e2edfb", color: p.grant_kind === "반환" ? "#a12" : "#184f95" }}>{p.grant_kind}</span></td>
                 <td className="num">{wonFull(p.paid_amount)}</td>
-                <td className="num">{p.grant_kind === "최초지급" ? p.initial_headcount : "-"}</td>
+                <td className="num">{p.initial_headcount ? `${p.grant_kind === "반환" ? "−" : ""}${p.initial_headcount}` : "-"}</td>
                 <td>{p.reason || "-"}</td>
                 <td>{p.paid_date || "-"}</td>
                 <td>{p.status}</td>
@@ -139,12 +146,10 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
                 <label className="field">금액 (원) *</label>
                 <input type="number" required value={editing.paid_amount ?? 0} onChange={(e) => set("paid_amount", Number(e.target.value))} />
               </div>
-              {editing.grant_kind === "최초지급" && (
-                <div>
-                  <label className="field">최초 선발인원</label>
-                  <input type="number" value={editing.initial_headcount ?? 0} onChange={(e) => set("initial_headcount", Number(e.target.value))} />
-                </div>
-              )}
+              <div>
+                <label className="field">{hcLabel(editing.grant_kind)} (명)</label>
+                <input type="number" value={editing.initial_headcount ?? 0} onChange={(e) => set("initial_headcount", Number(e.target.value))} />
+              </div>
               <div>
                 <label className="field">일자</label>
                 <input type="date" value={editing.paid_date ?? ""} onChange={(e) => set("paid_date", e.target.value)} />
@@ -171,11 +176,13 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
   );
 }
 
-function SumTile({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
+function SumTile({ label, value, highlight, unit }: { label: string; value: number; highlight?: boolean; unit?: string }) {
   return (
     <div className="kpi-tile" style={highlight ? { borderColor: "var(--brand)", borderWidth: 2 } : undefined}>
       <div className="label">{label}</div>
-      <div className="value" style={{ fontSize: 20 }}>{wonFull(value)}</div>
+      <div className="value" style={{ fontSize: 20 }}>
+        {unit ? `${value.toLocaleString("ko-KR")}${unit}` : wonFull(value)}
+      </div>
     </div>
   );
 }

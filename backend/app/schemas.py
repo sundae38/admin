@@ -398,6 +398,7 @@ class ProjectKPI(BaseModel):
     grant_remaining: float       # 지원금 집행잔액 = 총예산-실집행
     grant_execution_rate: float  # 지원금 예산 대비 집행률 %
     grant_initial_headcount: int # 최초 선발인원(지급 기준)
+    grant_support_headcount: int # 지원인원 = 최초 + 추가 - 반환 인원
     budget_lines: list[BudgetLine]      # 용도별 예산 대비 집행
     funding_sources: list[AmountItem]   # 재원별 예산
     program_participation_rate: float
@@ -418,6 +419,7 @@ class ProjectKPI(BaseModel):
 class OverviewKPI(BaseModel):
     total_projects: int
     total_selected: int
+    total_support_headcount: int  # 지원인원 통합(최초+추가-반환)
     total_budget: float
     total_paid: float
     overall_execution_rate: float
