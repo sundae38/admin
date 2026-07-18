@@ -68,9 +68,13 @@ def download_template(entity: str):
     """업로드용 빈 템플릿(헤더만) CSV 다운로드."""
     if entity not in importer.COLUMN_MAPS:
         raise HTTPException(status_code=404, detail="알 수 없는 데이터 종류입니다.")
-    df = pd.DataFrame(columns=list(_headers(entity).values()))
-    label = ENTITY_LABELS.get(entity, entity)
-    return _csv_response(df, f"{label}_업로드양식")
+    try:
+        df = pd.DataFrame(columns=list(_headers(entity).values()))
+        label = ENTITY_LABELS.get(entity, entity)
+        return _csv_response(df, f"{label}_업로드양식")
+    except Exception as exc:  # noqa: BLE001
+        import traceback
+        raise HTTPException(status_code=500, detail=traceback.format_exc()[-800:])
 
 
 @router.get("/{entity}")
