@@ -2,8 +2,7 @@
 import io
 
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from app import models
@@ -44,24 +43,21 @@ def _records_to_df(entity: str, records) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=list(headers.values()))
 
 
-def _csv_response(df: pd.DataFrame, filename: str) -> StreamingResponse:
-    buf = io.StringIO()
-    df.to_csv(buf, index=False)
-    data = ("﻿" + buf.getvalue()).encode("utf-8")  # BOM → 엑셀 한글 호환
-    return StreamingResponse(
-        io.BytesIO(data),
+def _csv_response(df: pd.DataFrame, filename: str) -> Response:
+    data = ("﻿" + df.to_csv(index=False)).encode("utf-8")  # BOM → 엑셀 한글 호환
+    return Response(
+        content=data,
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
     )
 
 
-def _xlsx_response(df: pd.DataFrame, filename: str) -> StreamingResponse:
+def _xlsx_response(df: pd.DataFrame, filename: str) -> Response:
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="data")
-    buf.seek(0)
-    return StreamingResponse(
-        buf,
+    return Response(
+        content=buf.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}.xlsx"'},
     )
