@@ -7,11 +7,11 @@ import AuditCell from "./AuditCell";
 
 const KINDS = ["최초지급", "추가지급", "반환"];
 
-function empty(projectId: number): Partial<Payment> {
+function empty(projectId: number, kind: string = "최초지급"): Partial<Payment> {
   return {
     project_id: projectId,
     budget_category: "지원금",
-    grant_kind: "최초지급",
+    grant_kind: kind,
     initial_headcount: 0,
     paid_amount: 0,
     reason: "",
@@ -78,9 +78,17 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
             {projects.map((p) => <option key={p.id} value={p.id}>{p.year} · {p.name}</option>)}
           </select>
         </div>
-        <button className="btn primary" disabled={projectId === ""} onClick={() => setEditing(empty(Number(projectId)))}>
-          + 지원금 내역 등록
-        </button>
+        <div className="row">
+          <button className="btn primary" disabled={projectId === ""} onClick={() => setEditing(empty(Number(projectId), "최초지급"))}>
+            + 최초지급
+          </button>
+          <button className="btn" disabled={projectId === ""} onClick={() => setEditing(empty(Number(projectId), "추가지급"))}>
+            + 추가지급
+          </button>
+          <button className="btn" disabled={projectId === ""} onClick={() => setEditing(empty(Number(projectId), "반환"))}>
+            + 반환
+          </button>
+        </div>
       </div>
 
       <div className="kpi-grid">
@@ -119,7 +127,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
       {editing && (
         <div className="modal-backdrop" onClick={() => setEditing(null)}>
           <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}>
-            <h3>{editing.id ? "지원금 내역 수정" : "지원금 내역 등록"}</h3>
+            <h3>{editing.id ? "지원금 내역 수정" : `${editing.grant_kind ?? "지원금"} 등록`}</h3>
             <div className="form-grid">
               <div>
                 <label className="field">구분 *</label>
