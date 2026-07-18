@@ -55,6 +55,20 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+
+
 # ---------- Project ----------
 class ProjectBase(BaseModel):
     name: str

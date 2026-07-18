@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const [pwOpen, setPwOpen] = useState(false);
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -14,10 +17,18 @@ export default function Layout() {
         <NavLink to="/data" className="nav-link">
           데이터 관리
         </NavLink>
+        {user?.role === "admin" && (
+          <NavLink to="/users" className="nav-link">
+            사용자 관리
+          </NavLink>
+        )}
         <div className="spacer" />
         <div className="user-box">
           <div style={{ fontWeight: 600, color: "#fff" }}>{user?.name}</div>
           <div>{user?.role === "admin" ? "관리자" : "담당자"}</div>
+          <button className="logout-btn" style={{ marginTop: 10 }} onClick={() => setPwOpen(true)}>
+            비밀번호 변경
+          </button>
           <button className="logout-btn" onClick={logout}>
             로그아웃
           </button>
@@ -26,6 +37,7 @@ export default function Layout() {
       <main className="main">
         <Outlet />
       </main>
+      {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
     </div>
   );
 }
