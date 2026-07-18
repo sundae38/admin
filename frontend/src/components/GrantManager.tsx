@@ -55,6 +55,11 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
   // 지원인원 = 최초 인원 + 추가 인원 − 반환 인원
   const supportHc = sumHc("최초지급") + sumHc("추가지급") - sumHc("반환");
 
+  // 예산 대비 집행 (프로젝트의 장학금 예산 기준)
+  const project = projects.find((p) => p.id === projectId);
+  const grantBudget = project?.budget_grant ?? 0;
+  const execRate = grantBudget ? Math.round((executed / grantBudget) * 1000) / 10 : 0;
+
   const hcLabel = (kind?: string) =>
     kind === "추가지급" ? "추가 인원" : kind === "반환" ? "반환 인원" : "최초 선발인원";
 
@@ -105,6 +110,9 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
       </div>
 
       <div className="kpi-grid">
+        <SumTile label="장학금(지원금) 예산" value={grantBudget} />
+        <SumTile label="집행률" value={execRate} unit="%" highlight />
+        <SumTile label="집행잔액" value={grantBudget - executed} />
         <SumTile label="최초지급" value={initial} />
         <SumTile label="추가지급" value={additional} />
         <SumTile label="반환" value={returned} />
