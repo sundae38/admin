@@ -1,0 +1,13 @@
+# @vercel/python 빌더가 엔트리(api/index.py)와 같은 위치에서 찾는 의존성 목록.
+# 루트 requirements.txt 와 동일하게 유지.
+fastapi==0.115.6
+sqlalchemy==2.0.36
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.1
+python-multipart==0.0.20
+pandas==2.2.3
+openpyxl==3.1.5
+email-validator==2.2.0
+psycopg2-binary==2.9.10
