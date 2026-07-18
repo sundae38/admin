@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
 import type { Program } from "../api/types";
 import type { DMContext } from "../pages/DataManagement";
-import { num } from "../format";
+import { groupProjectsByType, num } from "../format";
 import AuditCell from "./AuditCell";
 
 const TYPES = ["멘토링", "교육", "특강", "워크숍", "캠프", "기타"];
@@ -55,9 +55,13 @@ export default function ProgramManager({ ctx }: { ctx: DMContext }) {
     <div>
       <div className="toolbar">
         <div className="row">
-          <label className="field" style={{ margin: 0 }}>프로젝트</label>
-          <select value={projectId} onChange={(e) => setProjectId(Number(e.target.value))} style={{ width: 280 }}>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.year} · {p.name}</option>)}
+          <label className="field" style={{ margin: 0 }}>상위 유형 · 프로젝트</label>
+          <select value={projectId} onChange={(e) => setProjectId(Number(e.target.value))} style={{ width: 340 }}>
+            {groupProjectsByType(projects).map(([type, ps]) => (
+              <optgroup key={type} label={type}>
+                {ps.map((p) => <option key={p.id} value={p.id}>{p.year} · {p.name}</option>)}
+              </optgroup>
+            ))}
           </select>
         </div>
         <button className="btn primary" disabled={projectId === ""} onClick={() => setEditing(empty(Number(projectId)))}>

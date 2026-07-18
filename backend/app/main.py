@@ -8,7 +8,7 @@ from app.core.database import Base, SessionLocal, engine
 from app.core.security import hash_password
 from app.constants import SPECIAL_CARE_CATEGORIES
 from app.models import SpecialCategory, User
-from app.api import audit, auth, imports, kpi, meta, special_categories, users
+from app.api import audit, auth, export, imports, kpi, meta, special_categories, users
 from app.api.entities import ALL_ENTITY_ROUTERS
 
 
@@ -59,6 +59,7 @@ app.include_router(meta.router)
 app.include_router(special_categories.router)
 app.include_router(audit.router)
 app.include_router(imports.router)
+app.include_router(export.router)
 for r in ALL_ENTITY_ROUTERS:
     app.include_router(r)
 

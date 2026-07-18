@@ -20,7 +20,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "programs", label: "세부 프로그램 관리" },
   { key: "partners", label: "협력기관 관리" },
   { key: "surveys", label: "만족도 관리" },
-  { key: "import", label: "엑셀·CSV 가져오기" },
+  { key: "import", label: "엑셀 가져오기·내보내기" },
   { key: "audit", label: "감사 이력" },
 ];
 

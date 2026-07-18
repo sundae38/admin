@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
 import type { Program, Survey } from "../api/types";
 import type { DMContext } from "../pages/DataManagement";
+import { groupProjectsByType, surveyTypeLabel } from "../format";
 import AuditCell from "./AuditCell";
 
 interface Item { key: string; score: string }
@@ -119,9 +120,13 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
     <div>
       <div className="toolbar">
         <div className="row">
-          <label className="field" style={{ margin: 0 }}>프로젝트</label>
-          <select value={projectId} onChange={(e) => setProjectId(Number(e.target.value))} style={{ width: 280 }}>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.year} · {p.name}</option>)}
+          <label className="field" style={{ margin: 0 }}>상위 유형 · 프로젝트</label>
+          <select value={projectId} onChange={(e) => setProjectId(Number(e.target.value))} style={{ width: 340 }}>
+            {groupProjectsByType(projects).map(([type, ps]) => (
+              <optgroup key={type} label={type}>
+                {ps.map((p) => <option key={p.id} value={p.id}>{p.year} · {p.name}</option>)}
+              </optgroup>
+            ))}
           </select>
         </div>
         <button className="btn primary" disabled={projectId === ""} onClick={() => setEditing(empty(Number(projectId)))}>
@@ -138,7 +143,7 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
             {surveys.map((s) => (
               <tr key={s.id}>
                 <td style={{ fontWeight: 600 }}>{s.title}</td>
-                <td>{s.survey_type}</td>
+                <td>{surveyTypeLabel(s.survey_type)}</td>
                 <td>{s.survey_type === "프로그램" ? progName(s.program_id) : "-"}</td>
                 <td className="num">{s.respondent_count}</td>
                 <td className="num">{s.avg_score.toFixed(2)}</td>
@@ -164,7 +169,7 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
               <div>
                 <label className="field">설문 유형</label>
                 <select value={editing.survey_type} onChange={(e) => setEditing({ ...editing, survey_type: e.target.value })}>
-                  <option value="전체">전체 만족도</option>
+                  <option value="전체">사업 만족도</option>
                   <option value="프로그램">프로그램 만족도</option>
                 </select>
               </div>

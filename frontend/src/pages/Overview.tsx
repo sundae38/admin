@@ -182,7 +182,7 @@ export default function Overview() {
       {/* 프로젝트별 비교 */}
       <div className="chart-grid">
         <BarCard title="프로젝트별 총예산 집행률 (%)" data={execData} unit="%" color="#2a78d6" />
-        <BarCard title="프로젝트별 전체 만족도 (5점)" data={satData} unit="점" color="#1baf7a" />
+        <BarCard title="프로젝트별 사업 만족도 (5점)" data={satData} unit="점" color="#1baf7a" />
       </div>
 
       {/* 상위 유형별 만족도 */}

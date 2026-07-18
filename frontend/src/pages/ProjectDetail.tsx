@@ -12,7 +12,7 @@ import type {
 } from "../api/types";
 import KPITile from "../components/KPITile";
 import { BarCard, DonutCard } from "../components/charts";
-import { num, pct, won, wonFull } from "../format";
+import { num, pct, surveyTypeLabel, won, wonFull } from "../format";
 
 const TABS = ["선발", "지급·예산", "성장관리 프로그램", "성장관리 성과", "만족도", "협력기관"];
 
@@ -75,7 +75,7 @@ export default function ProjectDetail() {
         <PipeStep stage="② 지급" metric={pct(kpi.execution_rate)} sub={`총예산 집행 · 장학금(지원금) ${pct(kpi.grant_execution_rate)}`} />
         <PipeStep stage="③ 성장관리 프로그램" metric={pct(kpi.program_participation_rate)} sub={`참여율 · 만족도 ${kpi.program_satisfaction || "-"}`} />
         <PipeStep stage="④ 성장관리" metric={pct(kpi.growth_achievement_rate)} sub="성과 달성률" />
-        <PipeStep stage="⑤ 만족도" metric={kpi.overall_satisfaction ? kpi.overall_satisfaction.toFixed(2) : "-"} sub="전체 만족도 /5" />
+        <PipeStep stage="⑤ 만족도" metric={kpi.overall_satisfaction ? kpi.overall_satisfaction.toFixed(2) : "-"} sub="사업 만족도 /5" />
       </div>
 
       {/* KPI 타일 */}
@@ -86,7 +86,7 @@ export default function ProjectDetail() {
         <KPITile label="총예산 집행률" value={pct(kpi.execution_rate)} sub={wonFull(kpi.total_paid)} />
         <KPITile label="장학금(지원금) 집행률" value={pct(kpi.grant_execution_rate)} sub={wonFull(kpi.grant_paid)} />
         <KPITile label="프로그램 참여율" value={pct(kpi.program_participation_rate)} />
-        <KPITile label="전체 만족도" value={kpi.overall_satisfaction ? kpi.overall_satisfaction.toFixed(2) : "-"} unit="/5" />
+        <KPITile label="사업 만족도" value={kpi.overall_satisfaction ? kpi.overall_satisfaction.toFixed(2) : "-"} unit="/5" />
         <KPITile label="협력기관" value={num(kpi.partner_count)} unit="개" />
       </div>
 
@@ -213,7 +213,7 @@ export default function ProjectDetail() {
           <div className="chart-grid">
             {kpi.satisfaction_items.length > 0 && (
               <BarCard
-                title="전체 만족도 — 항목별 점수 (5점 만점)"
+                title="사업 만족도 — 항목별 점수 (5점 만점)"
                 data={kpi.satisfaction_items.map((i) => ({ label: i.label, value: i.score }))}
                 unit="점"
                 color="#1baf7a"
@@ -243,7 +243,7 @@ export default function ProjectDetail() {
             columns={["설문", "유형", "응답수", "평균점수", "항목별 점수", "실시일"]}
             rows={surveys.map((s) => [
               s.title,
-              s.survey_type,
+              surveyTypeLabel(s.survey_type),
               num(s.respondent_count),
               s.avg_score.toFixed(2),
               s.item_scores ? Object.entries(s.item_scores).map(([k, v]) => `${k} ${v}`).join(", ") : "-",
