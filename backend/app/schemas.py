@@ -93,6 +93,7 @@ class ProjectBase(BaseModel):
     # 예산 — 용도별
     total_budget: float = 0.0
     budget_grant: float = 0.0
+    budget_personnel: float = 0.0
     budget_review: float = 0.0
     budget_program: float = 0.0
     # 예산 — 재원별
@@ -121,6 +122,7 @@ class ProjectUpdate(BaseModel):
     end_date: Optional[date] = None
     total_budget: Optional[float] = None
     budget_grant: Optional[float] = None
+    budget_personnel: Optional[float] = None
     budget_review: Optional[float] = None
     budget_program: Optional[float] = None
     fund_contribution: Optional[float] = None

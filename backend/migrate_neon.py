@@ -20,6 +20,7 @@ statements = [
     "ALTER TABLE payments ADD COLUMN IF NOT EXISTS gender_counts JSON",
     "ALTER TABLE payments ADD COLUMN IF NOT EXISTS school_counts JSON",
     "ALTER TABLE payments ADD COLUMN IF NOT EXISTS care_counts JSON",
+    "ALTER TABLE projects ADD COLUMN IF NOT EXISTS budget_personnel DOUBLE PRECISION DEFAULT 0",
 ]
 for s in statements:
     cur.execute(s)

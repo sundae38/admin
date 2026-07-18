@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import require_admin
 from app.schemas import AuditLogOut
 
 router = APIRouter(
-    prefix="/api/audit", tags=["audit"], dependencies=[Depends(get_current_user)]
+    prefix="/api/audit", tags=["audit"], dependencies=[Depends(require_admin)]
 )
 
 

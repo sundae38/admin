@@ -15,6 +15,7 @@ export interface Project extends Audit {
   end_date: string | null;
   total_budget: number;
   budget_grant: number;
+  budget_personnel: number;
   budget_review: number;
   budget_program: number;
   fund_contribution: number;

@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
-import type { Payment } from "../api/types";
+import type { Payment, Project } from "../api/types";
 import type { DMContext } from "../pages/DataManagement";
-import { groupProjectsByType, won } from "../format";
+import { groupProjectsByType, pct, won } from "../format";
 
-// 장학금(지원금) 외 예산과목 — 담당자가 월별 총액으로 관리
-const CATEGORIES = ["심사관리비", "프로그램운영비"];
+// 예산과목(프로젝트 예산 기준) — 담당자가 월별 지출액을 일괄 입력
+const CATEGORIES: { name: string; budgetField: keyof Project }[] = [
+  { name: "인건비", budgetField: "budget_personnel" },
+  { name: "심사운영비", budgetField: "budget_review" },
+  { name: "사업운영비", budgetField: "budget_program" },
+];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
-const MARK = "월별집행"; // 이 그리드가 관리하는 지급 레코드 식별용(payment_type)
+const MARK = "월별집행";
 const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function MonthlyExpenseGrid({ ctx }: { ctx: DMContext }) {
   const { projects } = ctx;
   const [projectId, setProjectId] = useState<number | "">("");
-  // cells[category][month] = 금액,  ids[category][month] = paymentId
   const [cells, setCells] = useState<Record<string, Record<number, number>>>({});
   const [ids, setIds] = useState<Record<string, Record<number, number>>>({});
   const [saving, setSaving] = useState("");
@@ -27,12 +30,13 @@ export default function MonthlyExpenseGrid({ ctx }: { ctx: DMContext }) {
 
   function load() {
     if (projectId === "") return;
+    const names = CATEGORIES.map((c) => c.name);
     api.get<Payment[]>("/api/payments", { params: { project_id: projectId } }).then((r) => {
       const c: Record<string, Record<number, number>> = {};
       const idm: Record<string, Record<number, number>> = {};
-      CATEGORIES.forEach((cat) => { c[cat] = {}; idm[cat] = {}; });
+      names.forEach((n) => { c[n] = {}; idm[n] = {}; });
       r.data
-        .filter((p) => CATEGORIES.includes(p.budget_category) && p.payment_type === MARK && p.paid_date)
+        .filter((p) => names.includes(p.budget_category) && p.payment_type === MARK && p.paid_date)
         .forEach((p) => {
           const m = parseInt(p.paid_date!.slice(5, 7), 10);
           c[p.budget_category][m] = p.paid_amount;
@@ -44,9 +48,8 @@ export default function MonthlyExpenseGrid({ ctx }: { ctx: DMContext }) {
   }
   useEffect(load, [projectId]);
 
-  function setCell(cat: string, m: number, value: number) {
-    setCells((prev) => ({ ...prev, [cat]: { ...(prev[cat] || {}), [m]: value } }));
-  }
+  const setCell = (cat: string, m: number, v: number) =>
+    setCells((prev) => ({ ...prev, [cat]: { ...(prev[cat] || {}), [m]: v } }));
 
   async function saveCell(cat: string, m: number) {
     if (projectId === "") return;
@@ -65,22 +68,17 @@ export default function MonthlyExpenseGrid({ ctx }: { ctx: DMContext }) {
         await api.put(`/api/payments/${existing}`, { paid_amount: value, paid_date: `${year}-${pad(m)}-01` });
       } else if (value <= 0 && existing) {
         await api.delete(`/api/payments/${existing}`);
-        setIds((prev) => {
-          const next = { ...prev, [cat]: { ...(prev[cat] || {}) } };
-          delete next[cat][m];
-          return next;
-        });
+        setIds((prev) => { const n = { ...prev, [cat]: { ...(prev[cat] || {}) } }; delete n[cat][m]; return n; });
       }
       setSaving("저장됨 ✓");
-      setTimeout(() => setSaving(""), 1200);
+      setTimeout(() => setSaving(""), 1000);
     } catch {
       setSaving("저장 실패");
     }
   }
 
   const rowTotal = (cat: string) => MONTHS.reduce((s, m) => s + (cells[cat]?.[m] || 0), 0);
-  const colTotal = (m: number) => CATEGORIES.reduce((s, cat) => s + (cells[cat]?.[m] || 0), 0);
-  const grand = CATEGORIES.reduce((s, cat) => s + rowTotal(cat), 0);
+  const budgetOf = (bf: keyof Project) => (project ? (project[bf] as number) || 0 : 0);
 
   return (
     <div>
@@ -94,9 +92,23 @@ export default function MonthlyExpenseGrid({ ctx }: { ctx: DMContext }) {
               </optgroup>
             ))}
           </select>
-          <span className="muted">{year}년 · 예산과목별 월별 집행 총액(원)</span>
+          <span className="muted">{year}년 · 월별 지출액(원)</span>
         </div>
         <span className="muted">{saving}</span>
+      </div>
+
+      {/* 예산 대비 집행 요약 (프로젝트 예산 기준) */}
+      <div className="kpi-grid" style={{ marginBottom: 16 }}>
+        {CATEGORIES.map((c) => {
+          const bud = budgetOf(c.budgetField);
+          const paid = rowTotal(c.name);
+          return (
+            <div key={c.name} className="kpi-tile">
+              <div className="label">{c.name} <span className="muted">집행률 {pct(bud ? (paid / bud) * 100 : 0)}</span></div>
+              <div className="value" style={{ fontSize: 18 }}>{won(paid)} <span className="unit">/ 예산 {won(bud)}원</span></div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="table-wrap">
@@ -104,41 +116,39 @@ export default function MonthlyExpenseGrid({ ctx }: { ctx: DMContext }) {
           <thead>
             <tr>
               <th style={{ position: "sticky", left: 0 }}>예산과목</th>
+              <th className="num">예산</th>
               {MONTHS.map((m) => <th key={m} className="num">{m}월</th>)}
-              <th className="num">합계</th>
+              <th className="num">집행합계</th>
+              <th className="num">잔액</th>
             </tr>
           </thead>
           <tbody>
-            {CATEGORIES.map((cat) => (
-              <tr key={cat}>
-                <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{cat}</td>
-                {MONTHS.map((m) => (
-                  <td key={m} className="num" style={{ padding: 4 }}>
-                    <input
-                      type="number"
-                      min={0}
-                      value={cells[cat]?.[m] ?? 0}
-                      onChange={(e) => setCell(cat, m, Number(e.target.value))}
-                      onBlur={() => saveCell(cat, m)}
-                      style={{ width: 90, padding: "4px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}
-                    />
-                  </td>
-                ))}
-                <td className="num" style={{ fontWeight: 700 }}>{won(rowTotal(cat))}</td>
-              </tr>
-            ))}
-            <tr style={{ background: "var(--surface-2)", fontWeight: 700 }}>
-              <td>월 합계</td>
-              {MONTHS.map((m) => <td key={m} className="num">{won(colTotal(m))}</td>)}
-              <td className="num">{won(grand)}</td>
-            </tr>
+            {CATEGORIES.map((c) => {
+              const bud = budgetOf(c.budgetField);
+              const paid = rowTotal(c.name);
+              return (
+                <tr key={c.name}>
+                  <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{c.name}</td>
+                  <td className="num muted">{won(bud)}</td>
+                  {MONTHS.map((m) => (
+                    <td key={m} className="num" style={{ padding: 4 }}>
+                      <input type="number" min={0} value={cells[c.name]?.[m] ?? 0}
+                        onChange={(e) => setCell(c.name, m, Number(e.target.value))}
+                        onBlur={() => saveCell(c.name, m)}
+                        style={{ width: 86, padding: "4px 6px", textAlign: "right", fontVariantNumeric: "tabular-nums" }} />
+                    </td>
+                  ))}
+                  <td className="num" style={{ fontWeight: 700 }}>{won(paid)}</td>
+                  <td className="num" style={{ color: bud - paid < 0 ? "var(--danger)" : undefined }}>{won(bud - paid)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <p className="muted" style={{ fontSize: 12.5, marginTop: 10, lineHeight: 1.6 }}>
-        ※ 각 칸에 <b>월별 집행 총액(원)</b>을 입력하면 자동 저장됩니다. 값을 0으로 지우면 해당 월 기록이 삭제됩니다.<br />
-        입력한 금액은 대시보드의 <b>심사관리비·프로그램운영비 집행률</b>에 그대로 반영됩니다.
+        ※ 예산은 <b>프로젝트 관리</b>에서 입력한 인건비·심사운영비·사업운영비 값을 사용합니다. 각 칸에 <b>월별 지출액</b>을 입력하면 자동 저장되고, 집행률·잔액이 계산됩니다.
       </p>
     </div>
   );

@@ -88,9 +88,10 @@ class Project(AuditMixin, Base):
 
     # 예산 — 용도별 세분
     total_budget: Mapped[float] = mapped_column(Float, default=0.0)  # 총예산
-    budget_grant: Mapped[float] = mapped_column(Float, default=0.0)  # 지원금
-    budget_review: Mapped[float] = mapped_column(Float, default=0.0)  # 심사관리비
-    budget_program: Mapped[float] = mapped_column(Float, default=0.0)  # 프로그램 운영비
+    budget_grant: Mapped[float] = mapped_column(Float, default=0.0)  # 장학금(지원금)
+    budget_personnel: Mapped[float] = mapped_column(Float, default=0.0)  # 인건비
+    budget_review: Mapped[float] = mapped_column(Float, default=0.0)  # 심사운영비
+    budget_program: Mapped[float] = mapped_column(Float, default=0.0)  # 사업운영비
 
     # 예산 — 재원별
     fund_contribution: Mapped[float] = mapped_column(Float, default=0.0)  # 출연금
