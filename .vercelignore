@@ -1,0 +1,8 @@
+# Vercel 업로드에서 제외 (빌드는 Vercel이 수행)
+backend/.venv/
+backend/team_management.db
+**/__pycache__/
+frontend/node_modules/
+frontend/dist/
+*.db
+*.log

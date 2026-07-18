@@ -1,0 +1,22 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+backend/.env
+backend/*.db
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# 기타
+.DS_Store
+*.log
+
+# Vercel
+.vercel/
+deploy/set-vercel-env.ps1
+
+# 빌드 캐시 / 문서 원본
+*.tsbuildinfo
+*.hwpx
