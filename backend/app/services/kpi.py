@@ -32,6 +32,17 @@ def _distribution(values: list[str | None]) -> list[Distribution]:
     ]
 
 
+def _weighted_distribution(pairs) -> list[Distribution]:
+    """(라벨, 인원수) 목록을 인원수 가중으로 집계."""
+    counter: dict[str, int] = defaultdict(int)
+    for label, weight in pairs:
+        counter[label or "미상"] += weight
+    return [
+        Distribution(label=label, value=count)
+        for label, count in sorted(counter.items(), key=lambda x: (-x[1], x[0]))
+    ]
+
+
 def _special_care_distribution(participants) -> tuple[int, list[Distribution]]:
     """교육적 배려대상: 선발인원 중 배려대상(1종 이상) 수 + 항목별 분포(중복 포함)."""
     care_count = 0
@@ -74,13 +85,6 @@ def _satisfaction_items(surveys) -> list[ItemScore]:
 
 def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
     participants = project.participants
-    selected_count = len(participants)
-
-    competition_rate = (
-        _round(project.applicant_count / selected_count, 2)
-        if selected_count > 0
-        else 0.0
-    )
 
     # 예산 집행 — 용도별
     paid_by_cat = _paid_by_category(project.payments)
@@ -107,6 +111,44 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
         p.initial_headcount for p in grant_payments if p.grant_kind == "반환"
     )
     grant_support_headcount = grant_initial_headcount + grant_additional_hc - grant_returned_hc
+
+    # 세부구성(성별/학교급/교육약자): 지원내역(최초지급) 코호트가 있으면 그 기준(인원수 가중),
+    # 없으면 기존 선발자 기준으로 집계.
+    initial_records = [p for p in grant_payments if p.grant_kind == "최초지급"]
+    use_grant_demo = any(
+        (r.gender or r.school_level or r.special_categories) for r in initial_records
+    )
+    if use_grant_demo:
+        selected_count = grant_initial_headcount
+        gender_dist = _weighted_distribution([(r.gender, r.initial_headcount) for r in initial_records])
+        school_dist = _weighted_distribution([(r.school_level, r.initial_headcount) for r in initial_records])
+        region_dist: list[Distribution] = []
+        age_dist: list[Distribution] = []
+        category_dist: list[Distribution] = []
+        care_counter: dict[str, int] = defaultdict(int)
+        care_count = 0
+        for r in initial_records:
+            cats = r.special_categories or []
+            if cats:
+                care_count += r.initial_headcount
+                for c in cats:
+                    care_counter[c] += r.initial_headcount
+        care_dist = [
+            Distribution(label=l, value=v)
+            for l, v in sorted(care_counter.items(), key=lambda x: -x[1])
+        ]
+    else:
+        selected_count = len(participants)
+        gender_dist = _distribution([p.gender for p in participants])
+        school_dist = _distribution([p.school_level for p in participants])
+        region_dist = _distribution([p.region for p in participants])
+        age_dist = _distribution([p.age_group for p in participants])
+        category_dist = _distribution([p.category for p in participants])
+        care_count, care_dist = _special_care_distribution(participants)
+
+    competition_rate = (
+        _round(project.applicant_count / selected_count, 2) if selected_count > 0 else 0.0
+    )
 
     # 총 집행액 = 비지원금 지급 + 지원금 실집행
     non_grant_paid = sum(
@@ -171,8 +213,6 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
         _round(sum(achievements) / len(achievements)) if achievements else 0.0
     )
 
-    care_count, care_dist = _special_care_distribution(participants)
-
     return ProjectKPI(
         project_id=project.id,
         project_name=project.name,
@@ -205,11 +245,11 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
         partner_count=len(project.partners),
         special_care_count=care_count,
         special_care_distribution=care_dist,
-        gender_distribution=_distribution([p.gender for p in participants]),
-        age_distribution=_distribution([p.age_group for p in participants]),
-        school_distribution=_distribution([p.school_level for p in participants]),
-        region_distribution=_distribution([p.region for p in participants]),
-        category_distribution=_distribution([p.category for p in participants]),
+        gender_distribution=gender_dist,
+        age_distribution=age_dist,
+        school_distribution=school_dist,
+        region_distribution=region_dist,
+        category_distribution=category_dist,
     )
 
 

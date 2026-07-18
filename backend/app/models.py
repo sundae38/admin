@@ -165,7 +165,11 @@ class Payment(AuditMixin, Base):
     budget_category: Mapped[str] = mapped_column(String(30), default="지원금")
     # 지원금 지원내역 구분: 최초지급 | 추가지급 | 반환
     grant_kind: Mapped[str] = mapped_column(String(20), default="최초지급")
-    initial_headcount: Mapped[int] = mapped_column(Integer, default=0)  # 최초 선발인원(최초지급 시)
+    initial_headcount: Mapped[int] = mapped_column(Integer, default=0)  # 인원수(코호트)
+    # 코호트 세부구성 (데이터 관리 중심) — 이 지원내역 인원의 구성
+    gender: Mapped[str | None] = mapped_column(String(10), nullable=True)  # 성별
+    school_level: Mapped[str | None] = mapped_column(String(30), nullable=True)  # 학교급
+    special_categories: Mapped[list | None] = mapped_column(JSON, nullable=True)  # 교육약자
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)  # 사유
     planned_amount: Mapped[float] = mapped_column(Float, default=0.0)  # 계획금액
     paid_amount: Mapped[float] = mapped_column(Float, default=0.0)  # 금액(지급/추가/반환)

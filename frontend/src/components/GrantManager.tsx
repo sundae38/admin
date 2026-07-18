@@ -7,12 +7,17 @@ import AuditCell from "./AuditCell";
 
 const KINDS = ["최초지급", "추가지급", "반환"];
 
+const GENDERS = ["남", "여", "혼합", "기타"];
+
 function empty(projectId: number, kind: string = "최초지급"): Partial<Payment> {
   return {
     project_id: projectId,
     budget_category: "지원금",
     grant_kind: kind,
     initial_headcount: 0,
+    gender: "",
+    school_level: "",
+    special_categories: [],
     paid_amount: 0,
     reason: "",
     paid_date: "",
@@ -21,7 +26,9 @@ function empty(projectId: number, kind: string = "최초지급"): Partial<Paymen
 }
 
 export default function GrantManager({ ctx }: { ctx: DMContext }) {
-  const { projects } = ctx;
+  const { projects, meta } = ctx;
+  const careCats = meta?.special_care_categories || [];
+  const schoolLevels = meta?.school_levels || [];
   const [projectId, setProjectId] = useState<number | "">("");
   const [rows, setRows] = useState<Payment[]>([]);
   const [editing, setEditing] = useState<Partial<Payment> | null>(null);
@@ -75,6 +82,13 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
 
   const set = (k: keyof Payment, v: unknown) => setEditing({ ...editing, [k]: v });
 
+  function toggleCategory(cat: string) {
+    if (!editing) return;
+    const cur = editing.special_categories || [];
+    const next = cur.includes(cat) ? cur.filter((c) => c !== cat) : [...cur, cat];
+    setEditing({ ...editing, special_categories: next });
+  }
+
   return (
     <div>
       <div className="toolbar">
@@ -108,7 +122,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>구분</th><th className="num">금액</th><th className="num">인원수</th><th>사유</th><th>일자</th><th>상태</th><th>작성/수정 (감사)</th><th></th></tr>
+            <tr><th>구분</th><th className="num">금액</th><th className="num">인원수</th><th>세부구성(성별·학교급·교육약자)</th><th>사유</th><th>일자</th><th>상태</th><th>작성/수정 (감사)</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((p) => (
@@ -116,6 +130,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
                 <td><span className="badge" style={{ background: p.grant_kind === "반환" ? "#fbe4e4" : "#e2edfb", color: p.grant_kind === "반환" ? "#a12" : "#184f95" }}>{p.grant_kind}</span></td>
                 <td className="num">{wonFull(p.paid_amount)}</td>
                 <td className="num">{p.initial_headcount ? `${p.grant_kind === "반환" ? "−" : ""}${p.initial_headcount}` : "-"}</td>
+                <td>{[p.gender, p.school_level, (p.special_categories || []).join("/")].filter(Boolean).join(" · ") || "-"}</td>
                 <td>{p.reason || "-"}</td>
                 <td>{p.paid_date || "-"}</td>
                 <td>{p.status}</td>
@@ -126,7 +141,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={8} className="empty">등록된 장학금(지원금) 내역이 없습니다.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={9} className="empty">등록된 장학금(지원금) 내역이 없습니다.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -149,6 +164,38 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
               <div>
                 <label className="field">{hcLabel(editing.grant_kind)} (명)</label>
                 <input type="number" value={editing.initial_headcount ?? 0} onChange={(e) => set("initial_headcount", Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="field">성별</label>
+                <select value={editing.gender ?? ""} onChange={(e) => set("gender", e.target.value)}>
+                  <option value="">선택</option>
+                  {GENDERS.map((g) => <option key={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="field">학교급</label>
+                <select value={editing.school_level ?? ""} onChange={(e) => set("school_level", e.target.value)}>
+                  <option value="">선택</option>
+                  {schoolLevels.map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="full">
+                <label className="field">교육약자 (해당 항목 모두 선택)</label>
+                {careCats.length === 0 ? (
+                  <div className="muted" style={{ fontSize: 12 }}>관리자에게 [사용자 관리 → 교육약자 구분] 항목 추가를 요청하세요.</div>
+                ) : (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {careCats.map((cat) => {
+                      const on = (editing.special_categories || []).includes(cat);
+                      return (
+                        <button type="button" key={cat} onClick={() => toggleCategory(cat)} className="btn small"
+                          style={on ? { background: "var(--brand)", color: "#fff", borderColor: "var(--brand)" } : undefined}>
+                          {on ? "✓ " : ""}{cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="field">일자</label>

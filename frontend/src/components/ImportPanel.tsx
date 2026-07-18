@@ -4,7 +4,7 @@ import type { DMContext } from "../pages/DataManagement";
 
 const ENTITIES = [
   { key: "participants", label: "선발자 명단", cols: "이름, 성별, 연령대, 학교급, 지역, 소속, 교육약자, 선발일, 상태" },
-  { key: "payments", label: "지급 내역", cols: "예산항목(지원금/심사관리비/프로그램운영비), 지급유형, 계획금액, 지급액, 지급일, 상태" },
+  { key: "payments", label: "장학금(지원금)·지급 내역", cols: "예산항목(지원금/심사관리비/프로그램운영비), 구분(최초지급/추가지급/반환), 인원수, 성별, 학교급, 교육약자, 사유, 금액, 지급일, 상태" },
   { key: "partners", label: "협력기관", cols: "기관명, 유형, 협력내용, 담당자, 협약시작, 협약종료, 상태" },
   { key: "growth_metrics", label: "성장관리 성과", cols: "지표명, 목표값, 실적값, 측정일" },
   { key: "surveys", label: "만족도 설문", cols: "설문유형, 제목, 응답수, 평균점수, 실시일" },

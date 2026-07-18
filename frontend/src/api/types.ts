@@ -180,6 +180,9 @@ export interface Payment extends Audit {
   budget_category: string;
   grant_kind: string;
   initial_headcount: number;
+  gender: string | null;
+  school_level: string | null;
+  special_categories: string[] | null;
   reason: string | null;
   planned_amount: number;
   paid_amount: number;

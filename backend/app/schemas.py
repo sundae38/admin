@@ -183,6 +183,9 @@ class PaymentBase(BaseModel):
     budget_category: str = "지원금"
     grant_kind: str = "최초지급"
     initial_headcount: int = 0
+    gender: Optional[str] = None
+    school_level: Optional[str] = None
+    special_categories: Optional[list[str]] = None
     reason: Optional[str] = None
     planned_amount: float = 0.0
     paid_amount: float = 0.0
@@ -200,6 +203,9 @@ class PaymentUpdate(BaseModel):
     budget_category: Optional[str] = None
     grant_kind: Optional[str] = None
     initial_headcount: Optional[int] = None
+    gender: Optional[str] = None
+    school_level: Optional[str] = None
+    special_categories: Optional[list[str]] = None
     reason: Optional[str] = None
     planned_amount: Optional[float] = None
     paid_amount: Optional[float] = None

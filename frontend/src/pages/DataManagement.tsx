@@ -16,7 +16,6 @@ type Tab = "projects" | "participants" | "grants" | "programs" | "partners" | "s
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "projects", label: "프로젝트 관리" },
-  { key: "participants", label: "선발자 관리" },
   { key: "grants", label: "장학금(지원금) 내역" },
   { key: "programs", label: "세부 프로그램 관리" },
   { key: "partners", label: "협력기관 관리" },
