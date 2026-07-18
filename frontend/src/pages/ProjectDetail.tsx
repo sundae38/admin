@@ -72,7 +72,7 @@ export default function ProjectDetail() {
       {/* 프로세스 파이프라인 */}
       <div className="pipeline">
         <PipeStep stage="① 선발" metric={`${num(kpi.selected_count)}명`} sub={`경쟁률 ${kpi.competition_rate.toFixed(1)}:1`} />
-        <PipeStep stage="② 지급" metric={pct(kpi.execution_rate)} sub={`총예산 집행 · 지원금 ${pct(kpi.grant_execution_rate)}`} />
+        <PipeStep stage="② 지급" metric={pct(kpi.execution_rate)} sub={`총예산 집행 · 장학금(지원금) ${pct(kpi.grant_execution_rate)}`} />
         <PipeStep stage="③ 성장관리 프로그램" metric={pct(kpi.program_participation_rate)} sub={`참여율 · 만족도 ${kpi.program_satisfaction || "-"}`} />
         <PipeStep stage="④ 성장관리" metric={pct(kpi.growth_achievement_rate)} sub="성과 달성률" />
         <PipeStep stage="⑤ 만족도" metric={kpi.overall_satisfaction ? kpi.overall_satisfaction.toFixed(2) : "-"} sub="전체 만족도 /5" />
@@ -81,10 +81,10 @@ export default function ProjectDetail() {
       {/* KPI 타일 */}
       <div className="kpi-grid">
         <KPITile label="선발인원 / 목표" value={`${num(kpi.selected_count)}`} unit={`/${num(kpi.target_headcount)}명`} />
-        <KPITile label="교육적 배려대상" value={num(kpi.special_care_count)} unit="명" />
+        <KPITile label="교육약자" value={num(kpi.special_care_count)} unit="명" />
         <KPITile label="경쟁률" value={`${kpi.competition_rate.toFixed(1)}`} unit=": 1" sub={`지원 ${num(kpi.applicant_count)}명`} />
         <KPITile label="총예산 집행률" value={pct(kpi.execution_rate)} sub={wonFull(kpi.total_paid)} />
-        <KPITile label="지원금 집행률" value={pct(kpi.grant_execution_rate)} sub={wonFull(kpi.grant_paid)} />
+        <KPITile label="장학금(지원금) 집행률" value={pct(kpi.grant_execution_rate)} sub={wonFull(kpi.grant_paid)} />
         <KPITile label="프로그램 참여율" value={pct(kpi.program_participation_rate)} />
         <KPITile label="전체 만족도" value={kpi.overall_satisfaction ? kpi.overall_satisfaction.toFixed(2) : "-"} unit="/5" />
         <KPITile label="협력기관" value={num(kpi.partner_count)} unit="개" />
@@ -102,11 +102,11 @@ export default function ProjectDetail() {
           <div className="chart-grid">
             <DonutCard title="성별 구성" data={kpi.gender_distribution} />
             <DonutCard title="학교급 구성" data={kpi.school_distribution} />
-            <DonutCard title="교육적 배려대상 구성" data={kpi.special_care_distribution} />
+            <DonutCard title="교육약자 구성" data={kpi.special_care_distribution} />
             <DonutCard title="지역 구성" data={kpi.region_distribution} />
           </div>
           <SimpleTable
-            columns={["이름", "성별", "학교급", "지역", "배려대상", "상태"]}
+            columns={["이름", "성별", "학교급", "지역", "교육약자", "상태"]}
             rows={participants.map((p) => [
               p.name,
               p.gender,
@@ -123,9 +123,9 @@ export default function ProjectDetail() {
       {tab === "지급·예산" && (
         <>
           <div className="card" style={{ marginBottom: 16 }}>
-            <p className="card-title">지원금 집행 요약 (실집행 = 최초지급 + 추가지급 − 반환)</p>
+            <p className="card-title">장학금(지원금) 집행 요약 (실집행 = 최초지급 + 추가지급 − 반환)</p>
             <div className="kpi-grid" style={{ marginBottom: 0 }}>
-              <KPITile label="지원금 총예산" value={won(kpi.grant_budget)} unit="원" />
+              <KPITile label="장학금(지원금) 총예산" value={won(kpi.grant_budget)} unit="원" />
               <KPITile label="최초지급" value={won(kpi.grant_initial)} unit="원" sub={`최초 선발 ${num(kpi.grant_initial_headcount)}명`} />
               <KPITile label="추가지급" value={won(kpi.grant_additional)} unit="원" />
               <KPITile label="반환" value={won(kpi.grant_returned)} unit="원" />
@@ -210,16 +210,35 @@ export default function ProjectDetail() {
 
       {tab === "만족도" && (
         <>
-          {kpi.satisfaction_items.length > 0 && (
-            <div className="chart-grid">
+          <div className="chart-grid">
+            {kpi.satisfaction_items.length > 0 && (
               <BarCard
                 title="전체 만족도 — 항목별 점수 (5점 만점)"
                 data={kpi.satisfaction_items.map((i) => ({ label: i.label, value: i.score }))}
                 unit="점"
                 color="#1baf7a"
               />
-            </div>
-          )}
+            )}
+            {(() => {
+              const progSat = programs
+                .map((pr) => {
+                  const ss = surveys.filter((s) => s.survey_type === "프로그램" && s.program_id === pr.id);
+                  const totalResp = ss.reduce((a, s) => a + s.respondent_count, 0);
+                  const avg = totalResp > 0
+                    ? ss.reduce((a, s) => a + s.avg_score * s.respondent_count, 0) / totalResp
+                    : ss.length ? ss.reduce((a, s) => a + s.avg_score, 0) / ss.length : 0;
+                  const label = `${pr.name}${pr.session_no ? ` ${pr.session_no}회차` : ""}`;
+                  return { label, value: Math.round(avg * 100) / 100, count: ss.length };
+                })
+                .filter((x) => x.count > 0);
+              return progSat.length > 0 ? (
+                <BarCard title="세부 프로그램(회차)별 만족도 (5점)" data={progSat} unit="점" color="#2a78d6" />
+              ) : null;
+            })()}
+          </div>
+          <div className="callout note" style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13 }}>
+            프로그램 만족도는 [데이터 관리 → 만족도 관리]에서 <b>대상 세부 프로그램(회차)</b>을 지정해 등록하면 위 차트에 반영됩니다.
+          </div>
           <SimpleTable
             columns={["설문", "유형", "응답수", "평균점수", "항목별 점수", "실시일"]}
             rows={surveys.map((s) => [

@@ -41,14 +41,14 @@ export default function Overview() {
     .filter((p) => p.overall_satisfaction > 0)
     .map((p) => ({ label: shortName(p.project_name), value: p.overall_satisfaction }));
 
-  // 유형별 집행률 (총예산 vs 지원금)
+  // 유형별 집행률 (총예산 vs 장학금(지원금))
   const typeExec = data.execution_by_type.map((e) => ({
     label: e.label,
     total: e.total_rate,
     grant: e.grant_rate,
   }));
 
-  // 월별 지원금 지급·집행 추이
+  // 월별 장학금(지원금) 지급·집행 추이
   const monthAmt = data.monthly_execution.map((m) => ({
     label: m.month,
     paid: Math.round(m.grant_paid / 1e6),
@@ -57,6 +57,20 @@ export default function Overview() {
   const monthRate = data.monthly_execution.map((m) => ({
     month: m.month,
     rate: m.cumulative_rate,
+  }));
+
+  // 상위 유형별 평균 만족도
+  const typeSatMap: Record<string, { sum: number; n: number }> = {};
+  data.projects.forEach((p) => {
+    if (p.overall_satisfaction > 0) {
+      (typeSatMap[p.project_type] ??= { sum: 0, n: 0 });
+      typeSatMap[p.project_type].sum += p.overall_satisfaction;
+      typeSatMap[p.project_type].n += 1;
+    }
+  });
+  const typeSat = Object.entries(typeSatMap).map(([label, v]) => ({
+    label,
+    value: Math.round((v.sum / v.n) * 100) / 100,
   }));
 
   return (
@@ -95,13 +109,13 @@ export default function Overview() {
         <KPITile label="총 프로젝트 수" value={num(data.total_projects)} unit="개" />
         <KPITile label="총 선발인원" value={num(data.total_selected)} unit="명" />
         <KPITile label="지원인원" value={num(data.total_support_headcount)} unit="명" sub="최초+추가−반환" />
-        <KPITile label="교육적 배려대상" value={num(data.total_special_care)} unit="명" sub="선발인원 중 통합" />
+        <KPITile label="교육약자" value={num(data.total_special_care)} unit="명" sub="선발인원 중 통합" />
         <KPITile label="총예산" value={won(data.total_budget)} unit="원" sub={`집행 ${won(data.total_paid)}원`} />
         <KPITile label="평균 만족도" value={data.avg_satisfaction.toFixed(2)} unit="/5" />
         <KPITile label="협력기관" value={num(data.total_partners)} unit="개" />
       </div>
 
-      {/* 유형 통합 집행률 (총예산 / 지원금) */}
+      {/* 유형 통합 집행률 (총예산 / 장학금(지원금)) */}
       <div className="card" style={{ marginBottom: 22 }}>
         <p className="card-title">유형 통합 집행률</p>
         <div className="kpi-grid" style={{ marginBottom: 0 }}>
@@ -111,12 +125,12 @@ export default function Overview() {
             sub={`${won(data.integrated_execution.total_paid)} / ${won(data.integrated_execution.total_budget)}원`}
           />
           <KPITile
-            label="지원금 예산 대비 집행률"
+            label="장학금(지원금) 예산 대비 집행률"
             value={pct(data.integrated_execution.grant_rate)}
             sub={`실집행 ${won(data.integrated_execution.grant_paid)} / 예산 ${won(data.integrated_execution.grant_budget)}원`}
           />
           <KPITile
-            label="지원금 집행잔액"
+            label="장학금(지원금) 집행잔액"
             value={won(data.integrated_execution.grant_remaining)}
             unit="원"
             sub="총예산 − 실집행(최초+추가−반환)"
@@ -124,10 +138,10 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* 월별 지원금 지급·집행 추이 */}
+      {/* 월별 장학금(지원금) 지급·집행 추이 */}
       <div className="chart-grid">
         <GroupedBarCard
-          title="월별 지원금 지급·반환 (백만원)"
+          title="월별 장학금(지원금) 지급·반환 (백만원)"
           data={monthAmt}
           seriesA="paid"
           seriesB="returned"
@@ -136,7 +150,7 @@ export default function Overview() {
           unit="백만원"
         />
         <LineCard
-          title="월별 누적 지원금 집행률 (%)"
+          title="월별 누적 장학금(지원금) 집행률 (%)"
           data={monthRate}
           xKey="month"
           yKey="rate"
@@ -148,20 +162,20 @@ export default function Overview() {
       {/* 유형별 집행률 비교 + 유형별 프로젝트 수 */}
       <div className="chart-grid">
         <GroupedBarCard
-          title="유형별 집행률 (총예산 vs 지원금)"
+          title="유형별 집행률 (총예산 vs 장학금(지원금))"
           data={typeExec}
           seriesA="total"
           seriesB="grant"
           labelA="총예산 대비"
-          labelB="지원금 대비"
+          labelB="장학금(지원금) 대비"
           unit="%"
         />
         <DonutCard title="유형별 프로젝트 수" data={data.projects_by_type} />
       </div>
 
-      {/* 배려대상·학교급 통합 */}
+      {/* 교육약자·학교급 통합 */}
       <div className="chart-grid">
-        <DonutCard title="교육적 배려대상 구성 (통합)" data={data.special_care_distribution} />
+        <DonutCard title="교육약자 구성 (통합)" data={data.special_care_distribution} />
         <BarCard title="학교급별 선발인원 (통합)" data={data.school_distribution} unit="명" color="#4a3aa7" />
       </div>
 
@@ -169,6 +183,11 @@ export default function Overview() {
       <div className="chart-grid">
         <BarCard title="프로젝트별 총예산 집행률 (%)" data={execData} unit="%" color="#2a78d6" />
         <BarCard title="프로젝트별 전체 만족도 (5점)" data={satData} unit="점" color="#1baf7a" />
+      </div>
+
+      {/* 상위 유형별 만족도 */}
+      <div className="chart-grid">
+        <BarCard title="상위 유형별 평균 만족도 (5점)" data={typeSat} unit="점" color="#eb6834" />
       </div>
 
       {/* 유형별 집행률 표 */}
@@ -182,9 +201,9 @@ export default function Overview() {
                 <th className="num">프로젝트</th>
                 <th className="num">총예산</th>
                 <th className="num">총예산 집행률</th>
-                <th className="num">지원금 예산</th>
-                <th className="num">지원금 집행률</th>
-                <th className="num">지원금 집행잔액</th>
+                <th className="num">장학금(지원금) 예산</th>
+                <th className="num">장학금(지원금) 집행률</th>
+                <th className="num">장학금(지원금) 집행잔액</th>
               </tr>
             </thead>
             <tbody>
@@ -223,9 +242,9 @@ export default function Overview() {
               <th>연도</th>
               <th>상태</th>
               <th className="num">선발인원</th>
-              <th className="num">배려대상</th>
+              <th className="num">교육약자</th>
               <th className="num">총예산 집행</th>
-              <th className="num">지원금 집행</th>
+              <th className="num">장학금(지원금) 집행</th>
               <th className="num">만족도</th>
             </tr>
           </thead>

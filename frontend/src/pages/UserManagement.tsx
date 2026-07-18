@@ -3,6 +3,7 @@ import api from "../api/client";
 import type { User } from "../api/types";
 import { useAuth } from "../auth";
 import { datetime } from "../format";
+import SpecialCategoryManager from "../components/SpecialCategoryManager";
 
 export default function UserManagement() {
   const { user } = useAuth();
@@ -69,6 +70,12 @@ export default function UserManagement() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div style={{ marginTop: 34, paddingTop: 8, borderTop: "1px solid var(--grid)" }}>
+        <h2 className="page-title" style={{ fontSize: 18, marginTop: 16 }}>교육약자 구분</h2>
+        <p className="page-sub">담당자가 선발자 등록 시 선택할 교육약자 항목을 관리합니다.</p>
+        <SpecialCategoryManager />
       </div>
 
       {adding && <AddUserModal onClose={() => setAdding(false)} onDone={(m) => { setNotice(m); setAdding(false); load(); }} />}

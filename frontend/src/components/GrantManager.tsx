@@ -68,7 +68,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
   }
 
   async function remove(id: number) {
-    if (!confirm("이 지원금 내역을 삭제할까요?")) return;
+    if (!confirm("이 장학금(지원금) 내역을 삭제할까요?")) return;
     await api.delete(`/api/payments/${id}`);
     load();
   }
@@ -126,7 +126,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={8} className="empty">등록된 지원금 내역이 없습니다.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={8} className="empty">등록된 장학금(지원금) 내역이 없습니다.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -134,7 +134,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
       {editing && (
         <div className="modal-backdrop" onClick={() => setEditing(null)}>
           <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}>
-            <h3>{editing.id ? "지원금 내역 수정" : `${editing.grant_kind ?? "지원금"} 등록`}</h3>
+            <h3>{editing.id ? "장학금(지원금) 내역 수정" : `${editing.grant_kind ?? "장학금(지원금)"} 등록`}</h3>
             <div className="form-grid">
               <div>
                 <label className="field">구분 *</label>

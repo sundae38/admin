@@ -116,7 +116,7 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
 
     budget_lines = [
         BudgetLine(
-            label="지원금",
+            label="장학금(지원금)",
             budget=grant_budget,
             paid=grant_paid,
             rate=_rate(grant_paid, grant_budget),

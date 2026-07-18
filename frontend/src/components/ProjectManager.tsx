@@ -24,9 +24,11 @@ const EMPTY: Partial<Project> = {
   manager: "",
 };
 
+const GRANT_TYPE_PRESETS = ["학업장려금", "연구지원금", "활동장려금", "등록금"];
+
 const BUDGET_FIELDS: [keyof Project, string][] = [
   ["total_budget", "총예산"],
-  ["budget_grant", "지원금"],
+  ["budget_grant", "장학금(지원금)"],
   ["budget_review", "심사관리비"],
   ["budget_program", "프로그램운영비"],
 ];
@@ -77,7 +79,7 @@ export default function ProjectManager({ ctx }: { ctx: DMContext }) {
           <thead>
             <tr>
               <th>프로젝트명</th><th>유형</th><th>연도</th><th>상태</th>
-              <th className="num">총예산</th><th className="num">지원금</th>
+              <th className="num">총예산</th><th className="num">장학금(지원금)</th>
               <th className="num">목표선발</th><th>작성/수정 (감사)</th><th></th>
             </tr>
           </thead>
@@ -137,6 +139,27 @@ export default function ProjectManager({ ctx }: { ctx: DMContext }) {
                   <option>예정</option><option>진행중</option><option>완료</option>
                 </select>
               </div>
+              <div>
+                <label className="field">구분 (장학금 종류)</label>
+                <select
+                  value={GRANT_TYPE_PRESETS.includes(editing.grant_type ?? "") ? editing.grant_type ?? "" : (editing.grant_type ? "기타" : "")}
+                  onChange={(e) => set("grant_type", e.target.value === "기타" ? "기타" : e.target.value)}
+                >
+                  <option value="">선택 안 함</option>
+                  {GRANT_TYPE_PRESETS.map((t) => <option key={t}>{t}</option>)}
+                  <option value="기타">기타(직접 입력)</option>
+                </select>
+              </div>
+              {editing.grant_type && !GRANT_TYPE_PRESETS.includes(editing.grant_type) && (
+                <div>
+                  <label className="field">기타 구분명</label>
+                  <input
+                    placeholder="예: 국외연수 장학금"
+                    value={editing.grant_type === "기타" ? "" : editing.grant_type}
+                    onChange={(e) => set("grant_type", e.target.value || "기타")}
+                  />
+                </div>
+              )}
               <div>
                 <label className="field">담당자</label>
                 <input value={editing.manager ?? ""} onChange={(e) => set("manager", e.target.value)} />

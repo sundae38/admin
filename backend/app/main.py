@@ -6,13 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.security import hash_password
-from app.models import User
-from app.api import audit, auth, imports, kpi, meta, users
+from app.constants import SPECIAL_CARE_CATEGORIES
+from app.models import SpecialCategory, User
+from app.api import audit, auth, imports, kpi, meta, special_categories, users
 from app.api.entities import ALL_ENTITY_ROUTERS
 
 
 def init_db() -> None:
-    """테이블 생성 및 최초 관리자 계정 부트스트랩."""
+    """테이블 생성, 최초 관리자 계정 및 교육약자 기본 항목 부트스트랩."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -26,7 +27,11 @@ def init_db() -> None:
                     hashed_password=hash_password(settings.FIRST_ADMIN_PASSWORD),
                 )
             )
-            db.commit()
+        # 교육약자 구분 기본값 (비어 있을 때 1회 시드)
+        if db.query(SpecialCategory).count() == 0:
+            for i, name in enumerate(SPECIAL_CARE_CATEGORIES):
+                db.add(SpecialCategory(name=name, sort_order=i))
+        db.commit()
     finally:
         db.close()
 
@@ -51,6 +56,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(kpi.router)
 app.include_router(meta.router)
+app.include_router(special_categories.router)
 app.include_router(audit.router)
 app.include_router(imports.router)
 for r in ALL_ENTITY_ROUTERS:

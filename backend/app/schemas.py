@@ -69,10 +69,24 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
 
 
+# ---------- 교육약자 구분 (마스터) ----------
+class SpecialCategoryCreate(BaseModel):
+    name: str
+    sort_order: int = 0
+
+
+class SpecialCategoryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    sort_order: int
+
+
 # ---------- Project ----------
 class ProjectBase(BaseModel):
     name: str
     project_type: str = "기타"
+    grant_type: Optional[str] = None
     year: int
     start_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -101,6 +115,7 @@ class ProjectCreate(ProjectBase):
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     project_type: Optional[str] = None
+    grant_type: Optional[str] = None
     year: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -202,6 +217,7 @@ class ProgramBase(BaseModel):
     project_id: int
     name: str
     program_type: Optional[str] = None
+    session_no: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     target_count: int = 0
@@ -214,6 +230,7 @@ class ProgramCreate(ProgramBase):
 class ProgramUpdate(BaseModel):
     name: Optional[str] = None
     program_type: Optional[str] = None
+    session_no: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     target_count: Optional[int] = None

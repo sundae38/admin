@@ -3,7 +3,7 @@ import api from "../api/client";
 import type { DMContext } from "../pages/DataManagement";
 
 const ENTITIES = [
-  { key: "participants", label: "선발자 명단", cols: "이름, 성별, 연령대, 학교급, 지역, 소속, 배려대상, 선발일, 상태" },
+  { key: "participants", label: "선발자 명단", cols: "이름, 성별, 연령대, 학교급, 지역, 소속, 교육약자, 선발일, 상태" },
   { key: "payments", label: "지급 내역", cols: "예산항목(지원금/심사관리비/프로그램운영비), 지급유형, 계획금액, 지급액, 지급일, 상태" },
   { key: "partners", label: "협력기관", cols: "기관명, 유형, 협력내용, 담당자, 협약시작, 협약종료, 상태" },
   { key: "growth_metrics", label: "성장관리 성과", cols: "지표명, 목표값, 실적값, 측정일" },
@@ -63,7 +63,7 @@ export default function ImportPanel({ ctx }: { ctx: DMContext }) {
           <div className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5 }}>
             인식 가능한 컬럼(헤더): {current.cols}
             {entity === "participants" && (
-              <><br />※ 배려대상은 쉼표로 여러 개 입력 가능 (예: "기초생활수급, 한부모가정")</>
+              <><br />※ 교육약자은 쉼표로 여러 개 입력 가능 (예: "기초생활수급, 한부모가정")</>
             )}
           </div>
         </div>

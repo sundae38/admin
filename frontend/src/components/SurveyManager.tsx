@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
-import type { Survey } from "../api/types";
+import type { Program, Survey } from "../api/types";
 import type { DMContext } from "../pages/DataManagement";
 import AuditCell from "./AuditCell";
 
@@ -9,6 +9,7 @@ interface Item { key: string; score: string }
 interface EditState {
   id?: number;
   project_id: number;
+  program_id: number | null;
   survey_type: string;
   title: string;
   respondent_count: number;
@@ -20,6 +21,7 @@ interface EditState {
 function empty(projectId: number): EditState {
   return {
     project_id: projectId,
+    program_id: null,
     survey_type: "전체",
     title: "",
     respondent_count: 0,
@@ -33,6 +35,7 @@ function fromSurvey(s: Survey): EditState {
   return {
     id: s.id,
     project_id: s.project_id,
+    program_id: s.program_id,
     survey_type: s.survey_type,
     title: s.title ?? "",
     respondent_count: s.respondent_count,
@@ -44,10 +47,15 @@ function fromSurvey(s: Survey): EditState {
   };
 }
 
+function programLabel(p: Program): string {
+  return `${p.name}${p.session_no ? ` (${p.session_no}회차)` : ""}`;
+}
+
 export default function SurveyManager({ ctx }: { ctx: DMContext }) {
   const { projects } = ctx;
   const [projectId, setProjectId] = useState<number | "">("");
   const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [editing, setEditing] = useState<EditState | null>(null);
 
   useEffect(() => {
@@ -57,8 +65,14 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
   function load() {
     if (projectId === "") return;
     api.get<Survey[]>("/api/surveys", { params: { project_id: projectId } }).then((r) => setSurveys(r.data));
+    api.get<Program[]>("/api/programs", { params: { project_id: projectId } }).then((r) => setPrograms(r.data));
   }
   useEffect(load, [projectId]);
+
+  const progName = (id: number | null) => {
+    const p = programs.find((x) => x.id === id);
+    return p ? programLabel(p) : "-";
+  };
 
   function computedAvg(items: Item[]): number {
     const nums = items.map((i) => Number(i.score)).filter((n) => !isNaN(n) && n > 0);
@@ -75,6 +89,7 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
     const hasItems = Object.keys(item_scores).length > 0;
     const payload = {
       project_id: editing.project_id,
+      program_id: editing.survey_type === "프로그램" ? editing.program_id : null,
       survey_type: editing.survey_type,
       title: editing.title,
       respondent_count: Number(editing.respondent_count),
@@ -117,13 +132,14 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>설문</th><th>유형</th><th className="num">응답수</th><th className="num">평균</th><th>항목별 점수</th><th>실시일</th><th>작성/수정 (감사)</th><th></th></tr>
+            <tr><th>설문</th><th>유형</th><th>대상 프로그램</th><th className="num">응답수</th><th className="num">평균</th><th>항목별 점수</th><th>실시일</th><th>작성/수정 (감사)</th><th></th></tr>
           </thead>
           <tbody>
             {surveys.map((s) => (
               <tr key={s.id}>
                 <td style={{ fontWeight: 600 }}>{s.title}</td>
                 <td>{s.survey_type}</td>
+                <td>{s.survey_type === "프로그램" ? progName(s.program_id) : "-"}</td>
                 <td className="num">{s.respondent_count}</td>
                 <td className="num">{s.avg_score.toFixed(2)}</td>
                 <td>{s.item_scores ? Object.entries(s.item_scores).map(([k, v]) => `${k} ${v}`).join(", ") : "-"}</td>
@@ -135,7 +151,7 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
                 </td>
               </tr>
             ))}
-            {surveys.length === 0 && <tr><td colSpan={8} className="empty">등록된 설문이 없습니다.</td></tr>}
+            {surveys.length === 0 && <tr><td colSpan={9} className="empty">등록된 설문이 없습니다.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -156,6 +172,16 @@ export default function SurveyManager({ ctx }: { ctx: DMContext }) {
                 <label className="field">응답 수</label>
                 <input type="number" value={editing.respondent_count} onChange={(e) => setEditing({ ...editing, respondent_count: Number(e.target.value) })} />
               </div>
+              {editing.survey_type === "프로그램" && (
+                <div className="full">
+                  <label className="field">대상 세부 프로그램 (회차)</label>
+                  <select value={editing.program_id ?? ""} onChange={(e) => setEditing({ ...editing, program_id: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">선택 안 함</option>
+                    {programs.map((p) => <option key={p.id} value={p.id}>{programLabel(p)}</option>)}
+                  </select>
+                  {programs.length === 0 && <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>먼저 [세부 프로그램 관리]에서 프로그램을 등록하세요.</div>}
+                </div>
+              )}
               <div className="full">
                 <label className="field">설문 제목</label>
                 <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />

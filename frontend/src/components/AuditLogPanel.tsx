@@ -19,7 +19,7 @@ const ACTION_STYLE: Record<string, { bg: string; fg: string }> = {
 
 const ENTITY_TYPES = [
   { key: "projects", label: "프로젝트" },
-  { key: "payments", label: "지급/지원금" },
+  { key: "payments", label: "지급/장학금(지원금)" },
   { key: "partners", label: "협력기관" },
   { key: "surveys", label: "만족도설문" },
   { key: "participants", label: "선발자" },

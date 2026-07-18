@@ -33,6 +33,17 @@ class AuditMixin:
     updated_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
+class SpecialCategory(Base):
+    """교육약자 구분 마스터 — 관리자가 항목을 생성/관리한다."""
+
+    __tablename__ = "special_categories"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class AuditLog(Base):
     """감사 이력 — 모든 생성/수정/삭제/업로드를 시간순으로 누적(append-only).
 
@@ -70,6 +81,7 @@ class Project(AuditMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200), index=True)
     project_type: Mapped[str] = mapped_column(String(100), default="기타", index=True)  # 상위 유형
+    grant_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 구분(학업장려금 등)
     year: Mapped[int] = mapped_column(Integer, index=True)
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -174,6 +186,7 @@ class Program(AuditMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(200))
     program_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 멘토링|교육|특강
+    session_no: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 회차(1회 이상 운영)
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     target_count: Mapped[int] = mapped_column(Integer, default=0)  # 대상 인원

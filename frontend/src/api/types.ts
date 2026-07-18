@@ -9,6 +9,7 @@ export interface Project extends Audit {
   id: number;
   name: string;
   project_type: string;
+  grant_type: string | null;
   year: number;
   start_date: string | null;
   end_date: string | null;
@@ -133,8 +134,15 @@ export interface OverviewKPI {
 export interface Meta {
   school_levels: string[];
   special_care_categories: string[];
+  grant_types: string[];
   budget_categories: string[];
   project_types: string[];
+}
+
+export interface SpecialCategory {
+  id: number;
+  name: string;
+  sort_order: number;
 }
 
 export interface AuditLog {
@@ -184,6 +192,7 @@ export interface Program extends Audit {
   project_id: number;
   name: string;
   program_type: string | null;
+  session_no: number | null;
   start_date: string | null;
   end_date: string | null;
   target_count: number;

@@ -21,7 +21,7 @@ COLUMN_MAPS: dict[str, dict[str, list[str]]] = {
         "school_level": ["학교급", "학교", "학년", "school_level"],
         "region": ["지역", "region"],
         "category": ["소속", "category"],
-        "special_categories": ["배려대상", "교육적배려대상", "배려", "special_categories"],
+        "special_categories": ["교육약자", "배려대상", "교육적배려대상", "배려", "special_categories"],
         "selected_date": ["선발일", "선발일자", "selected_date"],
         "status": ["상태", "status"],
     },
