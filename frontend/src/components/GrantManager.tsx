@@ -7,7 +7,7 @@ import AuditCell from "./AuditCell";
 
 const KINDS = ["최초지급", "추가지급", "반환"];
 
-const GENDERS = ["남", "여", "혼합", "기타"];
+const GENDERS = ["남", "여", "기타"];
 
 function empty(projectId: number, kind: string = "최초지급"): Partial<Payment> {
   return {
@@ -15,9 +15,9 @@ function empty(projectId: number, kind: string = "최초지급"): Partial<Paymen
     budget_category: "지원금",
     grant_kind: kind,
     initial_headcount: 0,
-    gender: "",
-    school_level: "",
-    special_categories: [],
+    gender_counts: {},
+    school_counts: {},
+    care_counts: {},
     paid_amount: 0,
     reason: "",
     paid_date: "",
@@ -82,13 +82,6 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
 
   const set = (k: keyof Payment, v: unknown) => setEditing({ ...editing, [k]: v });
 
-  function toggleCategory(cat: string) {
-    if (!editing) return;
-    const cur = editing.special_categories || [];
-    const next = cur.includes(cat) ? cur.filter((c) => c !== cat) : [...cur, cat];
-    setEditing({ ...editing, special_categories: next });
-  }
-
   return (
     <div>
       <div className="toolbar">
@@ -130,7 +123,7 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
                 <td><span className="badge" style={{ background: p.grant_kind === "반환" ? "#fbe4e4" : "#e2edfb", color: p.grant_kind === "반환" ? "#a12" : "#184f95" }}>{p.grant_kind}</span></td>
                 <td className="num">{wonFull(p.paid_amount)}</td>
                 <td className="num">{p.initial_headcount ? `${p.grant_kind === "반환" ? "−" : ""}${p.initial_headcount}` : "-"}</td>
-                <td>{[p.gender, p.school_level, (p.special_categories || []).join("/")].filter(Boolean).join(" · ") || "-"}</td>
+                <td style={{ fontSize: 12.5 }}>{summarizeCounts(p) || "-"}</td>
                 <td>{p.reason || "-"}</td>
                 <td>{p.paid_date || "-"}</td>
                 <td>{p.status}</td>
@@ -162,40 +155,8 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
                 <input type="number" required value={editing.paid_amount ?? 0} onChange={(e) => set("paid_amount", Number(e.target.value))} />
               </div>
               <div>
-                <label className="field">{hcLabel(editing.grant_kind)} (명)</label>
+                <label className="field">{hcLabel(editing.grant_kind)} · 지급인원 (명)</label>
                 <input type="number" value={editing.initial_headcount ?? 0} onChange={(e) => set("initial_headcount", Number(e.target.value))} />
-              </div>
-              <div>
-                <label className="field">성별</label>
-                <select value={editing.gender ?? ""} onChange={(e) => set("gender", e.target.value)}>
-                  <option value="">선택</option>
-                  {GENDERS.map((g) => <option key={g}>{g}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="field">학교급</label>
-                <select value={editing.school_level ?? ""} onChange={(e) => set("school_level", e.target.value)}>
-                  <option value="">선택</option>
-                  {schoolLevels.map((s) => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="full">
-                <label className="field">교육약자 (해당 항목 모두 선택)</label>
-                {careCats.length === 0 ? (
-                  <div className="muted" style={{ fontSize: 12 }}>관리자에게 [사용자 관리 → 교육약자 구분] 항목 추가를 요청하세요.</div>
-                ) : (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {careCats.map((cat) => {
-                      const on = (editing.special_categories || []).includes(cat);
-                      return (
-                        <button type="button" key={cat} onClick={() => toggleCategory(cat)} className="btn small"
-                          style={on ? { background: "var(--brand)", color: "#fff", borderColor: "var(--brand)" } : undefined}>
-                          {on ? "✓ " : ""}{cat}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
               <div>
                 <label className="field">일자</label>
@@ -212,6 +173,18 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
                 <input value={editing.reason ?? ""} onChange={(e) => set("reason", e.target.value)} placeholder="예: 우수활동 인센티브 / 중도포기 환수" />
               </div>
             </div>
+
+            <div style={{ margin: "18px 0 4px", fontWeight: 600, fontSize: 13.5, color: "var(--text-secondary)", borderTop: "1px solid var(--grid)", paddingTop: 14 }}>
+              세부구성 (내부 데이터 관리용) — 지급인원과 별개로 항목별 인원을 직접 입력
+            </div>
+            <CountRow label="성별별 인원" options={GENDERS} value={editing.gender_counts || {}} onChange={(v) => set("gender_counts", v)} />
+            <CountRow label="학교급별 인원" options={schoolLevels} value={editing.school_counts || {}} onChange={(v) => set("school_counts", v)} />
+            {careCats.length > 0 ? (
+              <CountRow label="교육약자별 인원" options={careCats} value={editing.care_counts || {}} onChange={(v) => set("care_counts", v)} />
+            ) : (
+              <div className="muted" style={{ fontSize: 12 }}>교육약자 항목이 없습니다. 관리자에게 [사용자 관리 → 교육약자 구분] 추가를 요청하세요.</div>
+            )}
+
             <div className="row" style={{ justifyContent: "flex-end", marginTop: 20 }}>
               <button type="button" className="btn" onClick={() => setEditing(null)}>취소</button>
               <button className="btn primary">저장</button>
@@ -219,6 +192,45 @@ export default function GrantManager({ ctx }: { ctx: DMContext }) {
           </form>
         </div>
       )}
+    </div>
+  );
+}
+
+function fmtMap(m: Record<string, number> | null | undefined): string {
+  if (!m) return "";
+  return Object.entries(m).filter(([, v]) => v > 0).map(([k, v]) => `${k}${v}`).join("·");
+}
+function summarizeCounts(p: Payment): string {
+  const parts = [fmtMap(p.gender_counts), fmtMap(p.school_counts), fmtMap(p.care_counts)].filter(Boolean);
+  return parts.join(" / ");
+}
+
+function CountRow({ label, options, value, onChange }: {
+  label: string; options: string[]; value: Record<string, number>; onChange: (v: Record<string, number>) => void;
+}) {
+  const total = Object.values(value).reduce((a, b) => a + (Number(b) || 0), 0);
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <label className="field" style={{ marginBottom: 6 }}>{label} <span className="muted">(합계 {total}명)</span></label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {options.map((opt) => (
+          <label key={opt} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, background: "var(--surface-2)", border: "1px solid var(--grid)", borderRadius: 8, padding: "4px 8px" }}>
+            <span>{opt}</span>
+            <input
+              type="number"
+              min={0}
+              style={{ width: 58, padding: "3px 6px" }}
+              value={value[opt] ?? 0}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                const next = { ...value };
+                if (n > 0) next[opt] = n; else delete next[opt];
+                onChange(next);
+              }}
+            />
+          </label>
+        ))}
+      </div>
     </div>
   );
 }

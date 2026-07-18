@@ -112,39 +112,50 @@ def compute_project_kpi(db: Session, project: models.Project) -> ProjectKPI:
     )
     grant_support_headcount = grant_initial_headcount + grant_additional_hc - grant_returned_hc
 
-    # 세부구성(성별/학교급/교육약자): 지원내역(최초지급) 코호트가 있으면 그 기준(인원수 가중),
-    # 없으면 기존 선발자 기준으로 집계.
+    # 선발인원 = 지급인원(최초지급 인원수) 합, 없으면 선발자 수
     initial_records = [p for p in grant_payments if p.grant_kind == "최초지급"]
-    use_grant_demo = any(
-        (r.gender or r.school_level or r.special_categories) for r in initial_records
-    )
-    if use_grant_demo:
-        selected_count = grant_initial_headcount
-        gender_dist = _weighted_distribution([(r.gender, r.initial_headcount) for r in initial_records])
-        school_dist = _weighted_distribution([(r.school_level, r.initial_headcount) for r in initial_records])
-        region_dist: list[Distribution] = []
-        age_dist: list[Distribution] = []
-        category_dist: list[Distribution] = []
-        care_counter: dict[str, int] = defaultdict(int)
-        care_count = 0
-        for r in initial_records:
-            cats = r.special_categories or []
-            if cats:
-                care_count += r.initial_headcount
-                for c in cats:
-                    care_counter[c] += r.initial_headcount
-        care_dist = [
-            Distribution(label=l, value=v)
-            for l, v in sorted(care_counter.items(), key=lambda x: -x[1])
+    has_grant = len(initial_records) > 0
+    selected_count = grant_initial_headcount if has_grant else len(participants)
+
+    # 세부구성(내부 데이터 관리용): 지급인원과 별개로 직접 입력한 성별/학교급/교육약자 인원을 합산.
+    def _sum_maps(records, attr) -> dict[str, int]:
+        counter: dict[str, int] = defaultdict(int)
+        for r in records:
+            for key, val in (getattr(r, attr) or {}).items():
+                try:
+                    counter[key] += int(val)
+                except (TypeError, ValueError):
+                    continue
+        return counter
+
+    gender_counter = _sum_maps(initial_records, "gender_counts")
+    school_counter = _sum_maps(initial_records, "school_counts")
+    care_counter = _sum_maps(initial_records, "care_counts")
+    has_demo = bool(gender_counter or school_counter or care_counter)
+
+    region_dist: list[Distribution] = []
+    age_dist: list[Distribution] = []
+    category_dist: list[Distribution] = []
+    if has_demo:
+        _mk = lambda c: [
+            Distribution(label=l, value=v) for l, v in sorted(c.items(), key=lambda x: (-x[1], x[0]))
         ]
-    else:
-        selected_count = len(participants)
+        gender_dist = _mk(gender_counter)
+        school_dist = _mk(school_counter)
+        care_dist = _mk(care_counter)
+        care_count = sum(care_counter.values())
+    elif participants:
         gender_dist = _distribution([p.gender for p in participants])
         school_dist = _distribution([p.school_level for p in participants])
         region_dist = _distribution([p.region for p in participants])
         age_dist = _distribution([p.age_group for p in participants])
         category_dist = _distribution([p.category for p in participants])
         care_count, care_dist = _special_care_distribution(participants)
+    else:
+        gender_dist = []
+        school_dist = []
+        care_dist = []
+        care_count = 0
 
     competition_rate = (
         _round(project.applicant_count / selected_count, 2) if selected_count > 0 else 0.0

@@ -183,9 +183,10 @@ class PaymentBase(BaseModel):
     budget_category: str = "지원금"
     grant_kind: str = "최초지급"
     initial_headcount: int = 0
-    gender: Optional[str] = None
-    school_level: Optional[str] = None
-    special_categories: Optional[list[str]] = None
+    # 세부구성 — 성별/학교급/교육약자별 인원을 각각 직접 입력 (인원수 가중 아님)
+    gender_counts: Optional[dict[str, int]] = None      # {"남": 2, "여": 3}
+    school_counts: Optional[dict[str, int]] = None      # {"대학생": 5}
+    care_counts: Optional[dict[str, int]] = None        # {"기초생활수급": 4}
     reason: Optional[str] = None
     planned_amount: float = 0.0
     paid_amount: float = 0.0
@@ -203,9 +204,9 @@ class PaymentUpdate(BaseModel):
     budget_category: Optional[str] = None
     grant_kind: Optional[str] = None
     initial_headcount: Optional[int] = None
-    gender: Optional[str] = None
-    school_level: Optional[str] = None
-    special_categories: Optional[list[str]] = None
+    gender_counts: Optional[dict[str, int]] = None
+    school_counts: Optional[dict[str, int]] = None
+    care_counts: Optional[dict[str, int]] = None
     reason: Optional[str] = None
     planned_amount: Optional[float] = None
     paid_amount: Optional[float] = None
