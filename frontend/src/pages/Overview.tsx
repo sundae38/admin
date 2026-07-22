@@ -32,14 +32,16 @@ export default function Overview() {
       if (allTypes.length === 0) setAllTypes(d.projects_by_type.map((x) => x.label));
     };
 
+    // 캐시가 있으면 즉시 표시(로딩 없이) — 단, 항상 최신 데이터를 다시 받아 갱신한다
+    // (stale-while-revalidate). 신규 프로젝트 등록 등 변경분이 대시보드에 반영되도록.
     const cached = overviewCache.get(cacheKey);
     if (cached) {
       apply(cached);
       setLoading(false);
-      return;
+    } else {
+      setLoading(true);
     }
 
-    setLoading(true);
     let cancelled = false;
     api
       .get<OverviewKPI>("/api/kpi/overview", { params })
