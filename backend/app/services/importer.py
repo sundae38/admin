@@ -3,14 +3,18 @@
 각 엔터티마다 '한글/영문 헤더 → 모델 필드' 매핑을 정의하여
 업로드된 파일의 컬럼명이 조금씩 달라도 유연하게 수용한다.
 """
+from __future__ import annotations
+
 import io
 from datetime import date, datetime
 
-import pandas as pd
 from sqlalchemy.orm import Session
 
 from app import models
 from app.services import audit
+
+# pandas는 무거운 라이브러리라 콜드스타트를 늦춘다.
+# 실제 임포트/익스포트가 일어날 때만 함수 내부에서 지연 import한다.
 
 # 엔터티별 컬럼 매핑: 모델필드 -> 허용 헤더 목록(소문자 비교)
 COLUMN_MAPS: dict[str, dict[str, list[str]]] = {
@@ -76,7 +80,9 @@ _FLOAT_FIELDS = {"planned_amount", "paid_amount", "target_value", "actual_value"
 _INT_FIELDS = {"respondent_count", "initial_headcount"}
 
 
-def _read_table(content: bytes, filename: str) -> pd.DataFrame:
+def _read_table(content: bytes, filename: str) -> "pd.DataFrame":
+    import pandas as pd
+
     name = filename.lower()
     if name.endswith(".csv"):
         try:
@@ -87,6 +93,8 @@ def _read_table(content: bytes, filename: str) -> pd.DataFrame:
 
 
 def _coerce(field: str, value):
+    import pandas as pd
+
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return None
     if pd.isna(value):

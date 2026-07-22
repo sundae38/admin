@@ -6,6 +6,9 @@ import KPITile from "../components/KPITile";
 import { BarCard, DonutCard, GroupedBarCard, LineCard } from "../components/charts";
 import { num, pct, won } from "../format";
 
+// 필터 조합별 오버뷰 결과 캐시(세션 내). 무거운 집계 엔드포인트의 재호출을 줄인다.
+const overviewCache = new Map<string, OverviewKPI>();
+
 export default function Overview() {
   const [data, setData] = useState<OverviewKPI | null>(null);
   const [year, setYear] = useState<number | "all">("all");
@@ -18,18 +21,38 @@ export default function Overview() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setLoading(true);
+    const cacheKey = `${year}|${ptype}`;
     const params: Record<string, unknown> = {};
     if (year !== "all") params.year = year;
     if (ptype !== "all") params.project_type = ptype;
+
+    const apply = (d: OverviewKPI) => {
+      setData(d);
+      if (allYears.length === 0) setAllYears(d.projects_by_year.map((x) => x.label));
+      if (allTypes.length === 0) setAllTypes(d.projects_by_type.map((x) => x.label));
+    };
+
+    const cached = overviewCache.get(cacheKey);
+    if (cached) {
+      apply(cached);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    let cancelled = false;
     api
       .get<OverviewKPI>("/api/kpi/overview", { params })
       .then((res) => {
-        setData(res.data);
-        if (allYears.length === 0) setAllYears(res.data.projects_by_year.map((d) => d.label));
-        if (allTypes.length === 0) setAllTypes(res.data.projects_by_type.map((d) => d.label));
+        overviewCache.set(cacheKey, res.data);
+        if (!cancelled) apply(res.data);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [year, ptype]);
 
   if (loading && !data) return <div className="loading">불러오는 중…</div>;

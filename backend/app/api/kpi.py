@@ -23,7 +23,12 @@ def overview(
 
 @router.get("/project/{project_id}", response_model=ProjectKPI)
 def project_kpi(project_id: int, db: Session = Depends(get_db)):
-    project = db.get(models.Project, project_id)
+    project = (
+        db.query(models.Project)
+        .options(*kpi_service.project_load_options())
+        .filter(models.Project.id == project_id)
+        .first()
+    )
     if project is None:
         raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다.")
     return kpi_service.compute_project_kpi(db, project)

@@ -12,8 +12,18 @@ from app.api import audit, auth, export, imports, kpi, meta, special_categories,
 from app.api.entities import ALL_ENTITY_ROUTERS
 
 
+_db_initialized = False
+
+
 def init_db() -> None:
-    """테이블 생성, 최초 관리자 계정 및 교육약자 기본 항목 부트스트랩."""
+    """테이블 생성, 최초 관리자 계정 및 교육약자 기본 항목 부트스트랩.
+
+    서버리스에서는 모듈 로드(api/index.py)와 lifespan 양쪽에서 호출될 수 있어
+    프로세스당 1회만 수행하도록 가드한다(콜드스타트마다의 반영 쿼리 중복 방지).
+    """
+    global _db_initialized
+    if _db_initialized:
+        return
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -32,6 +42,7 @@ def init_db() -> None:
             for i, name in enumerate(SPECIAL_CARE_CATEGORIES):
                 db.add(SpecialCategory(name=name, sort_order=i))
         db.commit()
+        _db_initialized = True
     finally:
         db.close()
 

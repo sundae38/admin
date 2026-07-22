@@ -1,9 +1,27 @@
 """KPI 집계·계산식 — 계획서의 KPI 표를 구현한다."""
 from collections import Counter, defaultdict
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import models
+
+
+def project_load_options():
+    """프로젝트 KPI 계산에 필요한 관계를 한 번에 즉시 로딩(N+1 방지).
+
+    각 관계를 selectinload로 미리 적재하여, 프로젝트 수와 무관하게
+    관계별 1회(총 7~8회)의 쿼리만으로 전체 대시보드를 계산한다.
+    """
+    return (
+        selectinload(models.Project.participants),
+        selectinload(models.Project.payments),
+        selectinload(models.Project.programs).selectinload(
+            models.Program.participations
+        ),
+        selectinload(models.Project.growth_metrics),
+        selectinload(models.Project.surveys),
+        selectinload(models.Project.partners),
+    )
 from app.constants import FUND_FIELDS
 from app.schemas import (
     AmountItem,
@@ -328,7 +346,7 @@ def _monthly_execution(projects, grant_budget_total: float):
 def compute_overview(
     db: Session, year: int | None = None, project_type: str | None = None
 ) -> OverviewKPI:
-    query = db.query(models.Project)
+    query = db.query(models.Project).options(*project_load_options())
     if year is not None:
         query = query.filter(models.Project.year == year)
     if project_type:
